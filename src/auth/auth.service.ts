@@ -39,4 +39,8 @@ export class AuthService {
 
     return null;
   }
+
+  async getUser(id: string) {
+    return await this.userService.findOne(id);
+  }
 }
