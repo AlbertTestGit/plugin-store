@@ -18,11 +18,9 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const candidate = await this.userRepository.findOneBy({
-      email: createUserDto.email,
-    });
+    const candidate = await this.findOneByEmail(createUserDto.email);
 
-    if (candidate !== null) {
+    if (candidate) {
       throw new BadRequestException('User with this email already exists');
     }
 
@@ -48,6 +46,10 @@ export class UserService {
     }
 
     return user;
+  }
+
+  async findOneByEmail(email: string): Promise<User> {
+    return await this.userRepository.findOneBy({ email });
   }
 
   async update(updateUserDto: UpdateUserDto): Promise<User> {
