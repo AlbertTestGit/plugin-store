@@ -10,7 +10,9 @@ import {
 import { PluginService } from './plugin.service';
 import { CreatePluginDto } from './dto/create-plugin.dto';
 import { UpdatePluginDto } from './dto/update-plugin.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('plugins')
 @Controller('plugins')
 export class PluginController {
   constructor(private readonly pluginService: PluginService) {}
