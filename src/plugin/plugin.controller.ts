@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -23,22 +24,40 @@ export class PluginController {
   }
 
   @Get()
-  async findAll() {
+  async getAll() {
     return await this.pluginService.findAll();
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: number) {
-    return await this.pluginService.findOne(id);
+  async getOne(@Param('id') id: number) {
+    const plugin = await this.pluginService.findOneById(id);
+
+    if (!plugin) {
+      throw new NotFoundException('Plugin not found');
+    }
+
+    return plugin;
   }
 
   @Put()
   async update(@Body() updatePluginDto: UpdatePluginDto) {
-    return await this.pluginService.update(updatePluginDto);
+    const plugin = await this.pluginService.findOneById(updatePluginDto.id);
+
+    if (!plugin) {
+      throw new NotFoundException('Plugin not found');
+    }
+
+    return await this.pluginService.update(plugin, updatePluginDto);
   }
 
   @Delete(':id')
   async remove(@Param('id') id: number) {
+    const plugin = await this.pluginService.findOneById(id);
+
+    if (!plugin) {
+      throw new NotFoundException('Plugin not found');
+    }
+
     return await this.pluginService.remove(id);
   }
 }

@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { PluginModule } from './plugin/plugin.module';
 import { LicenseModule } from './license/license.module';
 import { Plugin } from './plugin/entities/plugin.entity';
+import { License } from './license/entities/license.entity';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { Plugin } from './plugin/entities/plugin.entity';
       username: 'postgres',
       password: 'qwerty123',
       database: 'plugin-store',
-      entities: [User, Plugin],
+      entities: [User, Plugin, License],
       synchronize: true,
     }),
     UserModule,

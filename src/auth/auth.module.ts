@@ -12,11 +12,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     UserModule,
     PassportModule,
     JwtModule.register({
+      // TODO: вынести в .env файл
       secret: 'XQlWKIs2sMuQMvfIHeIRLU52g4WxvJUT',
       signOptions: { expiresIn: '1d' },
     }),
   ],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy],
+  exports: [AuthService],
 })
 export class AuthModule {}

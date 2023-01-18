@@ -8,5 +8,6 @@ import { Plugin } from './entities/plugin.entity';
   imports: [TypeOrmModule.forFeature([Plugin])],
   controllers: [PluginController],
   providers: [PluginService],
+  exports: [PluginService],
 })
 export class PluginModule {}

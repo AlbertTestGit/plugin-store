@@ -1,19 +1,17 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { License } from '../../license/entities/license.entity';
 
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ nullable: false })
-  firstName: string;
-
-  @Column({ nullable: false })
-  lastName: string;
-
   @Column({ unique: true })
-  email: string;
+  username: string;
 
   @Column({ nullable: false })
   passwordHash: string;
+
+  @OneToMany(() => License, (license) => license.user)
+  licenses: License[];
 }

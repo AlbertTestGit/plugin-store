@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -16,9 +16,7 @@ export class AuthService {
   async login(user: User) {
     const payload: PayloadDto = {
       sub: user.id,
-      email: user.email,
-      given_name: user.firstName,
-      family_name: user.lastName,
+      username: user.username,
     };
 
     return {
@@ -27,20 +25,26 @@ export class AuthService {
   }
 
   async register(createUserDto: CreateUserDto) {
-    return await this.userService.create(createUserDto);
+    const candidate = await this.userService.findOneByUsername(
+      createUserDto.username,
+    );
+
+    if (candidate) {
+      throw new BadRequestException('This username is already taken');
+    }
+
+    const user = await this.userService.create(createUserDto);
+    delete user.passwordHash;
+    return user;
   }
 
-  async validateUser(email: string, password: string) {
-    const user = await this.userService.findOneByEmail(email);
+  async validateUser(username: string, password: string): Promise<User | null> {
+    const user = await this.userService.findOneByUsername(username);
 
     if (user && (await bcrypt.compare(password, user.passwordHash))) {
       return user;
     }
 
     return null;
-  }
-
-  async getUser(id: string) {
-    return await this.userService.findOne(id);
   }
 }

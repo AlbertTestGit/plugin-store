@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Plugin } from './entities/plugin.entity';
 import { Repository } from 'typeorm';
@@ -27,37 +27,41 @@ export class PluginService {
     return await this.pluginRepository.find();
   }
 
-  async findOne(id: number) {
-    const plugin = await this.pluginRepository.findOneBy({ id });
+  async findOneById(id: number) {
+    const plugin = await this.pluginRepository.findOne({
+      where: {
+        id,
+      },
+    });
 
     if (!plugin) {
-      throw new NotFoundException('Plugin is not found');
+      return null;
     }
 
     return plugin;
   }
 
-  async update(updatePluginDto: UpdatePluginDto) {
-    const plugin = await this.pluginRepository.findOneBy({
-      id: updatePluginDto.id,
+  async findOneByProductKey(productKey: string): Promise<Plugin | null> {
+    const plugin = await this.pluginRepository.findOne({
+      where: {
+        productKey,
+      },
     });
 
     if (!plugin) {
-      throw new NotFoundException('Plugin is not found');
+      return null;
     }
 
+    return plugin;
+  }
+
+  async update(plugin: Plugin, updatePluginDto: UpdatePluginDto) {
     Object.assign(plugin, updatePluginDto);
     await this.pluginRepository.save(plugin);
     return plugin;
   }
 
   async remove(id: number) {
-    const plugin = await this.pluginRepository.findOneBy({ id });
-
-    if (!plugin) {
-      throw new NotFoundException('Plugin is not found');
-    }
-
     await this.pluginRepository.delete(id);
   }
 }

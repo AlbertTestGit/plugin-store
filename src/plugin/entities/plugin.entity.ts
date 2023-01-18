@@ -22,6 +22,6 @@ export class Plugin {
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column()
+  @Column({ unique: true })
   productKey: string;
 }
