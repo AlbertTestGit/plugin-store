@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { User } from '../user/entities/user.entity';
 import { PayloadDto } from './dto/payload.dto';
 import { CreateUserDto } from '../user/dto/create-user.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +18,7 @@ export class AuthService {
     const payload: PayloadDto = {
       sub: user.id,
       username: user.username,
+      role: user.role,
     };
 
     return {
@@ -24,14 +26,18 @@ export class AuthService {
     };
   }
 
-  async register(createUserDto: CreateUserDto) {
+  async register(registerDto: RegisterDto) {
     const candidate = await this.userService.findOneByUsername(
-      createUserDto.username,
+      registerDto.username,
     );
 
     if (candidate) {
       throw new BadRequestException('This username is already taken');
     }
+
+    const createUserDto = new CreateUserDto();
+    createUserDto.username = registerDto.username;
+    createUserDto.password = registerDto.password;
 
     const user = await this.userService.create(createUserDto);
     delete user.passwordHash;

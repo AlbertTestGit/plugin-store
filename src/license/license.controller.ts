@@ -2,23 +2,25 @@ import {
   BadRequestException,
   Body,
   Controller,
-  Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
   Post,
+  Put,
   Request,
   UseGuards,
 } from '@nestjs/common';
 import { LicenseService } from './license.service';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { User } from '../user/entities/user.entity';
-import { OnlineActivateDto } from './dto/online-activate.dto';
 import { PluginService } from '../plugin/plugin.service';
 import { UserService } from '../user/user.service';
 import { AuthService } from '../auth/auth.service';
 import { IssueLicenseDto } from './dto/issue-license.dto';
+import { PayloadDto } from '../auth/dto/payload.dto';
+import { Role } from '../user/entities/role.enum';
+import { IssueOrRevokeLicenseDto } from './dto/issue-or-revoke-license.dto';
 
 @ApiTags('licenses')
 @Controller('licenses')
@@ -30,97 +32,150 @@ export class LicenseController {
     private readonly pluginService: PluginService,
   ) {}
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('manual-activation/:token')
   async manualActivation(@Request() req, @Param('token') token: string) {
-    const user: User = req.user;
+    const jwtUser: PayloadDto = req.user;
+    const user = await this.userService.findOneById(jwtUser.sub);
 
     const unpackToken = await this.licenseService.getUnpackToken(token);
 
-    const license = await this.licenseService.getLicenseFromUser(
+    const license = await this.licenseService.findLicense(
       user,
       unpackToken.swid,
+      unpackToken.hwid,
     );
 
     if (!license) {
       throw new NotFoundException('You do not have active licenses');
     }
 
-    return license;
+    const expire = license.expireDate.toISOString().substr(0, 10);
+    return {
+      licenseCode: await this.licenseService.getLicenseCode(token, expire),
+      expire,
+    };
   }
 
-  // @Post('automatic-activation')
-  // async automaticActivation(@Body() onlineActivateDto: OnlineActivateDto) {
-  //   const user = await this.authService.validateUser(
-  //     onlineActivateDto.username,
-  //     onlineActivateDto.password,
-  //   );
-  //
-  //   if (!user) {
-  //     throw new BadRequestException('Incorrect username or password');
-  //   }
-  //
-  //   const unpackToken = this.licenseService.getUnpackToken(
-  //     onlineActivateDto.token,
-  //   );
-  //
-  //   const license = await this.licenseService.getLicenseFromUser(
-  //     user,
-  //     unpackToken.swid,
-  //   );
-  //
-  //   if (!license) {
-  //     throw new NotFoundException('You do not have active licenses');
-  //   }
-  //
-  //   return license;
-  // }
-  //
-  // // TODO: только роли менеджер или админ
-  // @UseGuards(JwtAuthGuard)
-  // @Post()
-  // async licenseIssue(@Body() issueLicenseDto: IssueLicenseDto) {
-  //   const plugin = await this.pluginService.findOneByProductKey(
-  //     issueLicenseDto.swid,
-  //   );
-  //
-  //   if (!plugin) {
-  //     throw new NotFoundException('Plugin not found');
-  //   }
-  //
-  //   const user = await this.userService.findOne(issueLicenseDto.userId);
-  //
-  //   if (!user) {
-  //     throw new NotFoundException('User is not found');
-  //   }
-  //
-  //   const licenses = await this.licenseService.licenseIssue(
-  //     issueLicenseDto.swid,
-  //     user,
-  //     issueLicenseDto.count ?? 1,
-  //   );
-  //
-  //   licenses.map((license) => delete license.user.licenses);
-  //   return licenses;
-  // }
-  //
-  // // TODO: только роли менеджер или админ
-  // // @UseGuards(JwtAuthGuard)
-  // @Get()
-  // async getLicenses() {
-  //   return await this.licenseService.getLicenses();
-  // }
-  //
-  // // TODO: только роли менеджер или админ
-  // @UseGuards(JwtAuthGuard)
-  // @Delete(':id')
-  // async deleteLicense(@Param('id') id: number) {
-  //   const license = await this.licenseService.getLicense(id);
-  //
-  //   if (!license) {
-  //     throw new NotFoundException('License not found');
-  //   }
-  //
-  //   await this.licenseService.deleteLicense(id);
-  // }
+  @Get('automatic-activation/:token')
+  async automaticActivation(@Param('token') token: string) {
+    const unpackToken = await this.licenseService.getUnpackToken(token);
+    const user = await this.authService.validateUser(
+      unpackToken.user,
+      unpackToken.pass,
+    );
+
+    if (!user) {
+      throw new BadRequestException('Incorrect username or password');
+    }
+
+    const license = await this.licenseService.findLicense(
+      user,
+      unpackToken.swid,
+      unpackToken.hwid,
+    );
+
+    if (!license) {
+      throw new NotFoundException('You do not have active licenses');
+    }
+
+    const expire = license.expireDate.toISOString().substr(0, 10);
+    return {
+      licenseCode: await this.licenseService.getLicenseCode(token, expire),
+      expire,
+    };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  async licenseIssue(@Request() req, @Body() issueLicenseDto: IssueLicenseDto) {
+    const jwtUser: PayloadDto = req.user;
+
+    if (jwtUser.role != Role.Manager && jwtUser.role != Role.Admin) {
+      throw new ForbiddenException();
+    }
+
+    const plugin = await this.pluginService.findOneByProductKey(
+      issueLicenseDto.swid,
+    );
+    if (!plugin) {
+      throw new NotFoundException('Plugin not found');
+    }
+
+    const user = await this.userService.findOneById(issueLicenseDto.userId);
+    if (!user) {
+      throw new NotFoundException('User is not found');
+    }
+
+    const unusedLicenses = await this.licenseService.findUnusedLicenses(
+      user,
+      issueLicenseDto.swid,
+    );
+
+    if (unusedLicenses.length > 0) {
+      throw new BadRequestException('The user already has a license');
+    }
+
+    await this.licenseService.licenseIssue(
+      issueLicenseDto.swid,
+      user,
+      issueLicenseDto.count,
+    );
+
+    return issueLicenseDto;
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Put()
+  async issuedLicenseManagement(
+    @Request() req,
+    @Body() issueOrRevokeLicenseDto: IssueOrRevokeLicenseDto,
+  ) {
+    const jwtUser: PayloadDto = req.user;
+
+    if (jwtUser.role != Role.Manager && jwtUser.role != Role.Admin) {
+      throw new ForbiddenException();
+    }
+
+    const plugin = await this.pluginService.findOneByProductKey(
+      issueOrRevokeLicenseDto.swid,
+    );
+    if (!plugin) {
+      throw new NotFoundException('Plugin not found');
+    }
+
+    const user = await this.userService.findOneById(
+      issueOrRevokeLicenseDto.userId,
+    );
+    if (!user) {
+      throw new NotFoundException('User is not found');
+    }
+
+    const unusedLicenses = await this.licenseService.findUnusedLicenses(
+      user,
+      issueOrRevokeLicenseDto.swid,
+    );
+
+    if (unusedLicenses.length == 0) {
+      throw new NotFoundException('User does not have a unused license');
+    }
+
+    const delta = issueOrRevokeLicenseDto.count - unusedLicenses.length;
+
+    if (delta < 0) {
+      await this.licenseService.unusedLicenseRevocation(unusedLicenses, -delta);
+    } else {
+      await this.licenseService.licenseIssue(
+        unusedLicenses[0].swid,
+        user,
+        delta,
+        unusedLicenses[0].expireDate,
+      );
+    }
+
+    return issueOrRevokeLicenseDto;
+  }
 }

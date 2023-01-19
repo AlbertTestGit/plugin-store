@@ -3,12 +3,14 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
   ParseUUIDPipe,
   Post,
   Put,
+  Request,
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
@@ -16,6 +18,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Role } from './entities/role.enum';
+import { PayloadDto } from '../auth/dto/payload.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -25,7 +29,13 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  async create(@Body() createUserDto: CreateUserDto) {
+  async create(@Request() req, @Body() createUserDto: CreateUserDto) {
+    const jwtUser: PayloadDto = req.user;
+
+    if (jwtUser.role != Role.Admin) {
+      throw new ForbiddenException();
+    }
+
     const candidate = await this.userService.findOneByUsername(
       createUserDto.username,
     );
@@ -40,7 +50,13 @@ export class UserController {
   }
 
   @Get()
-  async getAll() {
+  async getAll(@Request() req) {
+    const jwtUser: PayloadDto = req.user;
+
+    if (jwtUser.role != Role.Admin) {
+      throw new ForbiddenException();
+    }
+
     const users = await this.userService.findAll();
     users.map((user) => delete user.passwordHash);
 
@@ -48,7 +64,16 @@ export class UserController {
   }
 
   @Get(':id')
-  async getOne(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
+  async getOne(
+    @Request() req,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
+    const jwtUser: PayloadDto = req.user;
+
+    if (jwtUser.sub != id && jwtUser.role != Role.Admin) {
+      throw new ForbiddenException();
+    }
+
     const user = await this.userService.findOneById(id);
 
     if (!user) {
@@ -60,7 +85,13 @@ export class UserController {
   }
 
   @Put()
-  async update(@Body() updateUserDto: UpdateUserDto) {
+  async update(@Request() req, @Body() updateUserDto: UpdateUserDto) {
+    const jwtUser: PayloadDto = req.user;
+
+    if (jwtUser.sub != updateUserDto.id && jwtUser.role != Role.Admin) {
+      throw new ForbiddenException();
+    }
+
     const user = await this.userService.findOneById(updateUserDto.id);
 
     if (!user) {
@@ -73,7 +104,13 @@ export class UserController {
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
+  async remove(@Request() req, @Param('id') id: string) {
+    const jwtUser: PayloadDto = req.user;
+
+    if (jwtUser.sub != id && jwtUser.role != Role.Admin) {
+      throw new ForbiddenException();
+    }
+
     const user = await this.userService.findOneById(id);
 
     if (!user) {

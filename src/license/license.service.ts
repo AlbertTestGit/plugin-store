@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { UnpackedTokenDto } from './dto/unpacked-token.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { License } from './entities/license.entity';
-import { MoreThan, Repository } from 'typeorm';
+import { IsNull, MoreThan, Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
 
 @Injectable()
@@ -15,7 +15,8 @@ export class LicenseService {
   // TODO: Заглушка
   async getUnpackToken(token: string): Promise<UnpackedTokenDto> {
     return {
-      swid: 'appkey1 yaya',
+      // swid: 'appkey1 yaya',
+      swid: '0bc62c2e-1147-4cf6-a982-46760bf5bbf7',
       hwid: 'b4b95cea10bbe85138e620694c1d54e6',
       user: '',
       pass: '',
@@ -25,30 +26,56 @@ export class LicenseService {
   }
 
   // TODO: Заглушка
-  getLicenseCode(token?: string) {
+  async getLicenseCode(token: string, expire: string) {
     return 'SWhBaUZNVENCbWpSSFl1Tk0wQm9VUFJxRU5nVUUrWXNiTmd6TEJrZ2lHcFpXRUozWVRKV05VMVRRalZaV0d4b0xtSTBZamsxWTJWaE1UQmlZbVU0TlRFek9HVTJNakEyT1RSak1XUTFOR1UyTGsxcVFYbE5lVEIzVFZNd2VFMUJQVDB1LkZ5UVhKUFh5UGxycEs3MjFWU01LWU1kVEllOXhjWU1lRHVGVkhpRkQ2dzQ9';
   }
 
-  async getLicenseFromUser(user: User, swid: string) {
+  async findLicense(user: User, swid: string, hwid: string) {
     const license = await this.licenseRepository.findOne({
       where: {
         swid,
         user,
         expireDate: MoreThan(new Date()),
+        hwid,
       },
     });
 
-    if (!license) {
+    if (license) {
+      return license;
+    }
+
+    const unusedLicenses = await this.findUnusedLicenses(user, swid);
+
+    if (unusedLicenses.length == 0) {
       return null;
     }
 
-    return license;
+    unusedLicenses[0].hwid = hwid;
+    const newLicense = await this.licenseRepository.save(unusedLicenses[0]);
+
+    return newLicense;
   }
 
-  // Выдача лицензии менеджером
-  async licenseIssue(swid: string, user: User, count: number) {
+  async findUnusedLicenses(user: User, swid: string) {
+    return await this.licenseRepository.find({
+      where: {
+        swid,
+        user,
+        expireDate: MoreThan(new Date()),
+        hwid: IsNull(),
+      },
+    });
+  }
+
+  async licenseIssue(
+    swid: string,
+    user: User,
+    count: number,
+    expireDate?: Date,
+  ) {
     const dateNow = new Date();
-    const expireDate = new Date(dateNow.setFullYear(dateNow.getFullYear() + 1));
+    expireDate =
+      expireDate ?? new Date(dateNow.setFullYear(dateNow.getFullYear() + 1));
 
     const licenses: License[] = [];
 
@@ -61,39 +88,12 @@ export class LicenseService {
       licenses.push(license);
     }
 
-    await this.licenseRepository.save(licenses);
-    return licenses;
+    return await this.licenseRepository.save(licenses);
   }
 
-  async getLicenses(): Promise<License[]> {
-    return await this.licenseRepository.find({
-      relations: {
-        user: true,
-      },
-    });
-  }
-
-  async getLicense(id: number): Promise<License | null> {
-    const license = await this.licenseRepository.findOne({
-      relations: {
-        user: true,
-      },
-      where: {
-        id,
-      },
-    });
-
-    if (!license) {
-      return null;
-    }
-
-    return license;
-  }
-
-  // TODO: Заглушка
-  async updateLicense() {}
-
-  async deleteLicense(id: number) {
-    await this.licenseRepository.delete(id);
+  async unusedLicenseRevocation(unusedLicenses: License[], count: number) {
+    await this.licenseRepository.delete(
+      unusedLicenses.slice(0, count).map((license) => license.id),
+    );
   }
 }

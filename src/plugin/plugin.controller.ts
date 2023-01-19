@@ -2,24 +2,38 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
   Post,
   Put,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { PluginService } from './plugin.service';
 import { CreatePluginDto } from './dto/create-plugin.dto';
 import { UpdatePluginDto } from './dto/update-plugin.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PayloadDto } from '../auth/dto/payload.dto';
+import { Role } from '../user/entities/role.enum';
 
 @ApiTags('plugins')
 @Controller('plugins')
 export class PluginController {
   constructor(private readonly pluginService: PluginService) {}
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Body() createPluginDto: CreatePluginDto) {
+  async create(@Request() req, @Body() createPluginDto: CreatePluginDto) {
+    const jwtUser: PayloadDto = req.user;
+
+    if (jwtUser.role != Role.Manager && jwtUser.role != Role.Admin) {
+      throw new ForbiddenException();
+    }
+
     return await this.pluginService.create(createPluginDto);
   }
 
@@ -39,8 +53,16 @@ export class PluginController {
     return plugin;
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Put()
-  async update(@Body() updatePluginDto: UpdatePluginDto) {
+  async update(@Request() req, @Body() updatePluginDto: UpdatePluginDto) {
+    const jwtUser: PayloadDto = req.user;
+
+    if (jwtUser.role != Role.Manager && jwtUser.role != Role.Admin) {
+      throw new ForbiddenException();
+    }
+
     const plugin = await this.pluginService.findOneById(updatePluginDto.id);
 
     if (!plugin) {
@@ -50,8 +72,16 @@ export class PluginController {
     return await this.pluginService.update(plugin, updatePluginDto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  async remove(@Param('id') id: number) {
+  async remove(@Request() req, @Param('id') id: number) {
+    const jwtUser: PayloadDto = req.user;
+
+    if (jwtUser.role != Role.Manager && jwtUser.role != Role.Admin) {
+      throw new ForbiddenException();
+    }
+
     const plugin = await this.pluginService.findOneById(id);
 
     if (!plugin) {

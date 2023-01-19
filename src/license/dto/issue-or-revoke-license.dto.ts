@@ -1,7 +1,7 @@
-import { IsNotEmpty, IsPositive } from 'class-validator';
+import { IsNotEmpty, IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class IssueLicenseDto {
+export class IssueOrRevokeLicenseDto {
   @ApiProperty()
   @IsNotEmpty()
   swid: string;
@@ -12,6 +12,6 @@ export class IssueLicenseDto {
 
   @ApiProperty()
   @IsNotEmpty()
-  @IsPositive()
+  @IsNumber()
   count: number;
 }
