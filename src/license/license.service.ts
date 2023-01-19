@@ -4,30 +4,45 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { License } from './entities/license.entity';
 import { IsNull, MoreThan, Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
+import { HttpService } from '@nestjs/axios';
+import { catchError, firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class LicenseService {
   constructor(
     @InjectRepository(License)
     private licenseRepository: Repository<License>,
+    private readonly httpService: HttpService,
   ) {}
 
-  // TODO: Заглушка
-  async getUnpackToken(token: string): Promise<UnpackedTokenDto> {
-    return {
-      // swid: 'appkey1 yaya',
-      swid: '0bc62c2e-1147-4cf6-a982-46760bf5bbf7',
-      hwid: 'b4b95cea10bbe85138e620694c1d54e6',
-      user: '',
-      pass: '',
-      token:
-        'WVhCd2EyVjVNU0I1WVhsaC5iNGI5NWNlYTEwYmJlODUxMzhlNjIwNjk0YzFkNTRlNi4u',
-    };
+  async getUnpackToken(token: string) {
+    const { data } = await firstValueFrom(
+      this.httpService
+        .get(`http://192.168.10.46:10100/unpack?token=${token}`)
+        .pipe(
+          catchError((error) => {
+            throw 'An error happened';
+          }),
+        ),
+    );
+
+    return data.data as UnpackedTokenDto;
   }
 
-  // TODO: Заглушка
   async getLicenseCode(token: string, expire: string) {
-    return 'SWhBaUZNVENCbWpSSFl1Tk0wQm9VUFJxRU5nVUUrWXNiTmd6TEJrZ2lHcFpXRUozWVRKV05VMVRRalZaV0d4b0xtSTBZamsxWTJWaE1UQmlZbVU0TlRFek9HVTJNakEyT1RSak1XUTFOR1UyTGsxcVFYbE5lVEIzVFZNd2VFMUJQVDB1LkZ5UVhKUFh5UGxycEs3MjFWU01LWU1kVEllOXhjWU1lRHVGVkhpRkQ2dzQ9';
+    const { data } = await firstValueFrom(
+      this.httpService
+        .get(
+          `http://192.168.10.46:10100/license?token=${token}&expire=${expire}`,
+        )
+        .pipe(
+          catchError((error) => {
+            throw 'An error happened';
+          }),
+        ),
+    );
+
+    return data.data as string;
   }
 
   async findLicense(user: User, swid: string, hwid: string) {
