@@ -30,7 +30,7 @@ export class PluginController {
   async create(@Request() req, @Body() createPluginDto: CreatePluginDto) {
     const jwtUser: PayloadDto = req.user;
 
-    if (jwtUser.role != Role.Manager && jwtUser.role != Role.Admin) {
+    if (jwtUser.role != Role.Developer && jwtUser.role != Role.Admin) {
       throw new ForbiddenException();
     }
 
@@ -59,7 +59,7 @@ export class PluginController {
   async update(@Request() req, @Body() updatePluginDto: UpdatePluginDto) {
     const jwtUser: PayloadDto = req.user;
 
-    if (jwtUser.role != Role.Manager && jwtUser.role != Role.Admin) {
+    if (jwtUser.role != Role.Developer && jwtUser.role != Role.Admin) {
       throw new ForbiddenException();
     }
 
@@ -78,7 +78,7 @@ export class PluginController {
   async remove(@Request() req, @Param('id') id: number) {
     const jwtUser: PayloadDto = req.user;
 
-    if (jwtUser.role != Role.Manager && jwtUser.role != Role.Admin) {
+    if (jwtUser.role != Role.Developer && jwtUser.role != Role.Admin) {
       throw new ForbiddenException();
     }
 

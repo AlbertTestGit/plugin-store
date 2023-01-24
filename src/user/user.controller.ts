@@ -53,7 +53,7 @@ export class UserController {
   async getAll(@Request() req) {
     const jwtUser: PayloadDto = req.user;
 
-    if (jwtUser.role != Role.Admin) {
+    if (jwtUser.role != Role.Manager && jwtUser.role != Role.Admin) {
       throw new ForbiddenException();
     }
 
@@ -70,7 +70,7 @@ export class UserController {
   ) {
     const jwtUser: PayloadDto = req.user;
 
-    if (jwtUser.sub != id && jwtUser.role != Role.Admin) {
+    if (jwtUser.sub != id && jwtUser.role != Role.Manager && jwtUser.role != Role.Admin) {
       throw new ForbiddenException();
     }
 
