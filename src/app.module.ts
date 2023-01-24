@@ -14,7 +14,7 @@ import { License } from './license/entities/license.entity';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'db',
+      host: 'localhost',
       port: 5432,
       username: 'postgres',
       password: 'qwerty123',

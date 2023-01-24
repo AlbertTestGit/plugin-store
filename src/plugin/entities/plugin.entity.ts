@@ -13,9 +13,6 @@ export class Plugin {
   @Column()
   name: string;
 
-  @Column({ nullable: true })
-  developerKey: string;
-
   @Column()
   petrelVersion: string;
 
