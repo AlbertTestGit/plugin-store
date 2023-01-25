@@ -133,7 +133,7 @@ export class LicenseService {
   // }
 
   async userLicenses(user: User, plugins: Plugin[]) {
-    let res = [];
+    const res = [];
 
     for (const plugin of plugins) {
       const licenses = await this.licenseRepository.find({
@@ -142,7 +142,7 @@ export class LicenseService {
           user,
           expireDate: MoreThan(new Date()),
           hwid: IsNull(),
-        }
+        },
       });
 
       res.push({
@@ -156,6 +156,6 @@ export class LicenseService {
     return {
       user,
       licenses: res,
-    }
+    };
   }
 }
