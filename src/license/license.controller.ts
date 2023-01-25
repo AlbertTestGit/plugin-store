@@ -133,7 +133,15 @@ export class LicenseController {
     return issueOrRevokeLicenseDto;
   }
 
-  // TODO: Сколько лицензии у пользователей
   @Get()
-  async getLicenses() {}
+  async getLicensesCount(@Request() req, @Query('userId') userId: number) {
+    const user = await this.userService.findOneById(userId);
+    if (!user) {
+      throw new NotFoundException('User is not found');
+    }
+
+    const plugins = await this.pluginService.findAll();
+
+    return await this.licenseService.userLicenses(user, plugins);
+  }
 }
