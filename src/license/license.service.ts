@@ -15,6 +15,7 @@ export class LicenseService {
     private readonly httpService: HttpService,
   ) {}
 
+  // TODO: Hardcode
   async getUnpackToken(token: string) {
     const { data } = await firstValueFrom(
       this.httpService
@@ -29,6 +30,7 @@ export class LicenseService {
     return data.data as UnpackedTokenDto;
   }
 
+  // TODO: Hardcode
   async getLicenseCode(token: string, expire: string) {
     const { data } = await firstValueFrom(
       this.httpService

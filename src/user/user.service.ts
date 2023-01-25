@@ -27,7 +27,7 @@ export class UserService {
     return await this.userRepository.find();
   }
 
-  async findOneById(id: string): Promise<User | null> {
+  async findOneById(id: number): Promise<User | null> {
     const user = await this.userRepository.findOne({
       where: {
         id: id,
@@ -65,7 +65,7 @@ export class UserService {
     return await this.userRepository.save(user);
   }
 
-  async remove(id: string) {
+  async remove(id: number) {
     await this.userRepository.delete(id);
   }
 }

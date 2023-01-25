@@ -8,7 +8,7 @@ export class IssueOrRevokeLicenseDto {
 
   @ApiProperty()
   @IsNotEmpty()
-  userId: string;
+  userId: number;
 
   @ApiProperty()
   @IsNotEmpty()

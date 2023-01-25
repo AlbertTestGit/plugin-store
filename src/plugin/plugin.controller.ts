@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -34,6 +35,14 @@ export class PluginController {
       throw new ForbiddenException();
     }
 
+    const existPlugin = await this.pluginService.findOneByName(
+      createPluginDto.name,
+    );
+
+    if (existPlugin) {
+      throw new BadRequestException('This name is already taken');
+    }
+
     return await this.pluginService.create(createPluginDto);
   }
 
@@ -67,6 +76,13 @@ export class PluginController {
 
     if (!plugin) {
       throw new NotFoundException('Plugin not found');
+    }
+
+    if (
+      updatePluginDto.name &&
+      (await this.pluginService.findOneByName(updatePluginDto.name))
+    ) {
+      throw new BadRequestException('This name is already taken');
     }
 
     return await this.pluginService.update(plugin, updatePluginDto);

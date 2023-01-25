@@ -7,7 +7,6 @@ import {
   Get,
   NotFoundException,
   Param,
-  ParseUUIDPipe,
   Post,
   Put,
   Request,
@@ -64,13 +63,14 @@ export class UserController {
   }
 
   @Get(':id')
-  async getOne(
-    @Request() req,
-    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-  ) {
+  async getOne(@Request() req, @Param('id') id: number) {
     const jwtUser: PayloadDto = req.user;
 
-    if (jwtUser.sub != id && jwtUser.role != Role.Manager && jwtUser.role != Role.Admin) {
+    if (
+      jwtUser.sub != id &&
+      jwtUser.role != Role.Manager &&
+      jwtUser.role != Role.Admin
+    ) {
       throw new ForbiddenException();
     }
 
@@ -98,13 +98,20 @@ export class UserController {
       throw new NotFoundException('User is not found');
     }
 
+    if (
+      updateUserDto.username &&
+      (await this.userService.findOneByUsername(updateUserDto.username))
+    ) {
+      throw new BadRequestException('This username is already taken');
+    }
+
     const updatedUser = await this.userService.update(user, updateUserDto);
     delete updatedUser.passwordHash;
     return updatedUser;
   }
 
   @Delete(':id')
-  async remove(@Request() req, @Param('id') id: string) {
+  async remove(@Request() req, @Param('id') id: number) {
     const jwtUser: PayloadDto = req.user;
 
     if (jwtUser.sub != id && jwtUser.role != Role.Admin) {

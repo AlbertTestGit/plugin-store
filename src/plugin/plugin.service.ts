@@ -55,6 +55,20 @@ export class PluginService {
     return plugin;
   }
 
+  async findOneByName(name: string) {
+    const plugin = await this.pluginRepository.findOne({
+      where: {
+        name,
+      },
+    });
+
+    if (!plugin) {
+      return null;
+    }
+
+    return plugin;
+  }
+
   async update(plugin: Plugin, updatePluginDto: UpdatePluginDto) {
     Object.assign(plugin, updatePluginDto);
     await this.pluginRepository.save(plugin);
