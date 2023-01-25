@@ -14,7 +14,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     JwtModule.register({
       // TODO: вынести в .env файл
       secret: 'XQlWKIs2sMuQMvfIHeIRLU52g4WxvJUT',
-      signOptions: { expiresIn: '1d' },
+      // signOptions: { expiresIn: '1d' },
     }),
   ],
   controllers: [AuthController],
