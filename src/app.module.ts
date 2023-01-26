@@ -11,6 +11,7 @@ import { Plugin } from './plugin/entities/plugin.entity';
 import { License } from './license/entities/license.entity';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { PluginVersion } from './plugin/entities/plugin-version.entity';
 
 @Module({
   imports: [
@@ -19,12 +20,12 @@ import { join } from 'path';
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'db',
+      host: 'localhost',
       port: 5432,
       username: 'postgres',
       password: 'qwerty123',
       database: 'plugin-store',
-      entities: [User, Plugin, License],
+      entities: [User, Plugin, License, PluginVersion],
       synchronize: true,
     }),
     UserModule,

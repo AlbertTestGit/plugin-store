@@ -18,4 +18,7 @@ export class User {
 
   @OneToMany(() => License, (license) => license.user)
   licenses: License[];
+
+  @OneToMany(() => License, (license) => license.user)
+  pluginVersions: License[];
 }
