@@ -59,6 +59,13 @@ export class LicenseController {
 
   @Get('automatic-activation')
   async automaticActivation(@Query('token') token: string) {
+    if (!token) {
+      throw new BadRequestException({
+        success: false,
+        message: 'token cannot be empty',
+      });
+    }
+
     const unpackToken = await this.licenseService.getUnpackToken(token);
     const user = await this.authService.validateUser(
       unpackToken.user,
@@ -66,7 +73,10 @@ export class LicenseController {
     );
 
     if (!user) {
-      throw new BadRequestException('Incorrect username or password');
+      throw new BadRequestException({
+        success: false,
+        message: 'Incorrect username or password',
+      });
     }
 
     const license = await this.licenseService.findLicense(
@@ -76,13 +86,19 @@ export class LicenseController {
     );
 
     if (!license) {
-      throw new NotFoundException('You do not have active licenses');
+      throw new NotFoundException({
+        success: false,
+        message: 'You do not have active licenses',
+      });
     }
 
     const expire = license.expireDate.toISOString().substr(0, 10);
     return {
-      licenseCode: await this.licenseService.getLicenseCode(token, expire),
-      expire,
+      success: true,
+      data: {
+        licenseCode: await this.licenseService.getLicenseCode(token, expire),
+        expire,
+      },
     };
   }
 

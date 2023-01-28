@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { UnpackedTokenDto } from './dto/unpacked-token.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { License } from './entities/license.entity';
@@ -16,6 +16,7 @@ export class LicenseService {
     private readonly httpService: HttpService,
   ) {}
 
+  private logger = new Logger(LicenseService.name);
   // TODO: Hardcode
   async getUnpackToken(token: string) {
     const { data } = await firstValueFrom(
@@ -23,7 +24,14 @@ export class LicenseService {
         .get(`http://192.168.10.46:10100/unpack?token=${token}`)
         .pipe(
           catchError((error) => {
-            throw 'An error happened';
+            this.logger.error(error);
+            throw new HttpException(
+              {
+                status: false,
+                message: 'problems with the licensing service',
+              },
+              HttpStatus.INTERNAL_SERVER_ERROR,
+            );
           }),
         ),
     );
@@ -40,7 +48,14 @@ export class LicenseService {
         )
         .pipe(
           catchError((error) => {
-            throw 'An error happened';
+            this.logger.error(error);
+            throw new HttpException(
+              {
+                status: false,
+                message: 'problems with the licensing service',
+              },
+              HttpStatus.INTERNAL_SERVER_ERROR,
+            );
           }),
         ),
     );
