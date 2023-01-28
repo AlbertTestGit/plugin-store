@@ -17,25 +17,9 @@ export class UploadPluginVersionDto {
 
   @ApiProperty()
   @IsNotEmpty()
-  pluginFile: any;
-
-  @ApiPropertyOptional()
-  @Optional()
-  helpFileEn: any;
-
-  @ApiPropertyOptional()
-  @Optional()
-  helpFileRu: any;
-
-  @ApiPropertyOptional()
-  @Optional()
-  helpFileKz: any;
-
-  @ApiProperty()
-  @IsNotEmpty()
   gitLink: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ default: true })
   @Optional()
-  beta: boolean;
+  beta?: boolean | string;
 }
