@@ -111,7 +111,11 @@ export class LicenseController {
   ) {
     const jwtUser: PayloadDto = req.user;
 
-    if (jwtUser.role != Role.Manager && jwtUser.role != Role.Admin) {
+    if (
+      jwtUser.sub != issueOrRevokeLicenseDto.userId &&
+      jwtUser.role != Role.Manager &&
+      jwtUser.role != Role.Admin
+    ) {
       throw new ForbiddenException();
     }
 

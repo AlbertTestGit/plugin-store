@@ -92,6 +92,10 @@ export class UserController {
       throw new ForbiddenException();
     }
 
+    if (jwtUser.role != Role.Admin) {
+      delete updateUserDto.role;
+    }
+
     const user = await this.userService.findOneById(updateUserDto.id);
 
     if (!user) {
@@ -100,6 +104,7 @@ export class UserController {
 
     if (
       updateUserDto.username &&
+      updateUserDto.username != user.username &&
       (await this.userService.findOneByUsername(updateUserDto.username))
     ) {
       throw new BadRequestException('This username is already taken');
