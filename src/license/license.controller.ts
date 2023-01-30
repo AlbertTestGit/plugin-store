@@ -95,10 +95,7 @@ export class LicenseController {
     const expire = license.expireDate.toISOString().substr(0, 10);
     return {
       success: true,
-      data: {
-        licenseCode: await this.licenseService.getLicenseCode(token, expire),
-        expire,
-      },
+      data: await this.licenseService.getLicenseCode(token, expire),
     };
   }
 
