@@ -11,9 +11,11 @@ import {
   Request,
   UseGuards,
   ForbiddenException,
+  Delete,
+  Query,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { UploadPluginVersionDto } from './dto/upload-plugin-version.dto';
 import { PluginVersionService } from './plugin-version.service';
@@ -45,6 +47,36 @@ export class PluginVersionController {
   }
 
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        pluginId: { type: 'number', nullable: false },
+        version: { type: 'string' },
+        description: { type: 'string' },
+        gitLink: { type: 'string' },
+        beta: { type: 'boolean', default: true },
+        pluginFile: {
+          type: 'string',
+          format: 'binary',
+        },
+        helpFileEn: {
+          type: 'string',
+          format: 'binary',
+        },
+        helpFileRu: {
+          type: 'string',
+          format: 'binary',
+          nullable: true,
+        },
+        helpFileKz: {
+          type: 'string',
+          format: 'binary',
+          nullable: false,
+        },
+      },
+    },
+  })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('upload')
@@ -94,16 +126,6 @@ export class PluginVersionController {
       throw new NotFoundException('Plugin not found');
     }
 
-    if (typeof uploadPluginVersionDto.beta?.valueOf() == 'string') {
-      if (uploadPluginVersionDto.beta == 'true')
-        uploadPluginVersionDto.beta = true;
-      else if (uploadPluginVersionDto.beta == 'false')
-        uploadPluginVersionDto.beta = false;
-      else {
-        throw new BadRequestException('beta must be a boolean value');
-      }
-    }
-
     return await this.pluginVersionService.uploadPluginVersion(
       uploadPluginVersionDto,
       plugin,
@@ -112,6 +134,113 @@ export class PluginVersionController {
       files.helpFileEn?.[0].filename,
       files.helpFileRu?.[0].filename,
       files.helpFileKz?.[0].filename,
+    );
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  async remove(@Request() req, @Param('id') id: number) {
+    const jwtUser: PayloadDto = req.user;
+
+    const pluginVersion = await this.pluginVersionService.findOneById(id);
+
+    if (!pluginVersion) {
+      throw new NotFoundException('plugin version not found');
+    }
+
+    if (jwtUser.sub != pluginVersion.author.id && jwtUser.role != Role.Admin) {
+      throw new ForbiddenException();
+    }
+
+    fs.unlinkSync(`upload/${pluginVersion.fileName}`);
+    if (pluginVersion.helpFileEn)
+      fs.unlinkSync(`upload/${pluginVersion.helpFileEn}`);
+    if (pluginVersion.helpFileRu)
+      fs.unlinkSync(`upload/${pluginVersion.helpFileRu}`);
+    if (pluginVersion.helpFileKz)
+      fs.unlinkSync(`upload/${pluginVersion.helpFileKz}`);
+
+    return await this.pluginVersionService.remove(id);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('beta/:id')
+  async switchBeta(
+    @Request() req,
+    @Param('id') id: number,
+    @Query('flag') flag: string,
+  ) {
+    if (!flag || (flag != 'true' && flag != 'false')) {
+      throw new BadRequestException({
+        success: false,
+        message: 'invalid value in flag parameter',
+      });
+    }
+
+    const jwtUser: PayloadDto = req.user;
+
+    const pluginVersion = await this.pluginVersionService.findOneById(id);
+
+    if (!pluginVersion) {
+      throw new NotFoundException('plugin version not found');
+    }
+
+    if (jwtUser.sub != pluginVersion.author.id && jwtUser.role != Role.Admin) {
+      throw new ForbiddenException();
+    }
+
+    let bool = true;
+    if (flag == 'false') {
+      bool = false;
+    }
+
+    return await this.pluginVersionService.switchBeta(pluginVersion, bool);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('deprecated/:id')
+  async switchDeprecated(
+    @Request() req,
+    @Param('id') id: number,
+    @Query('flag') flag: string,
+  ) {
+    if (!flag || (flag != 'true' && flag != 'false')) {
+      throw new BadRequestException({
+        success: false,
+        message: 'invalid value in flag parameter',
+      });
+    }
+
+    const jwtUser: PayloadDto = req.user;
+
+    const pluginVersion = await this.pluginVersionService.findOneById(id);
+
+    if (!pluginVersion) {
+      throw new NotFoundException('plugin version not found');
+    }
+
+    if (jwtUser.sub != pluginVersion.author.id && jwtUser.role != Role.Admin) {
+      throw new ForbiddenException();
+    }
+
+    let bool = true;
+    if (flag == 'false') {
+      bool = false;
+    }
+
+    if (
+      (!pluginVersion.deprecated && !bool) ||
+      (pluginVersion.deprecated && bool)
+    ) {
+      return pluginVersion;
+    }
+
+    return await this.pluginVersionService.switchDeprecated(
+      pluginVersion,
+      bool,
     );
   }
 }

@@ -21,5 +21,5 @@ export class UploadPluginVersionDto {
 
   @ApiPropertyOptional({ default: true })
   @Optional()
-  beta?: boolean | string;
+  beta?: boolean;
 }

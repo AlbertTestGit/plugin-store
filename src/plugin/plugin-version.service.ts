@@ -14,7 +14,12 @@ export class PluginVersionService {
   ) {}
 
   async findOneById(id: number) {
-    return await this.pluginVersionRepository.findOne({ where: { id } });
+    return await this.pluginVersionRepository.findOne({
+      relations: {
+        author: true,
+      },
+      where: { id },
+    });
   }
 
   async uploadPluginVersion(
@@ -35,9 +40,27 @@ export class PluginVersionService {
     pluginVersion.helpFileKz = helpKzFileName;
     pluginVersion.author = user;
     pluginVersion.gitLink = uploadPluginVersionDto.gitLink;
-    pluginVersion.beta = uploadPluginVersionDto.beta as boolean;
+    pluginVersion.beta = uploadPluginVersionDto.beta;
     pluginVersion.plugin = plugin;
 
+    return await this.pluginVersionRepository.save(pluginVersion);
+  }
+
+  async remove(id: number) {
+    await this.pluginVersionRepository.delete(id);
+  }
+
+  async switchBeta(pluginVersion: PluginVersion, flag: boolean) {
+    pluginVersion.beta = flag;
+    return await this.pluginVersionRepository.save(pluginVersion);
+  }
+
+  async switchDeprecated(pluginVersion: PluginVersion, flag: boolean) {
+    if (flag) {
+      pluginVersion.deprecated = new Date();
+    } else {
+      pluginVersion.deprecated = null;
+    }
     return await this.pluginVersionRepository.save(pluginVersion);
   }
 }
