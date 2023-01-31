@@ -1,3 +1,4 @@
+import { PluginVersion } from 'src/plugin/entities/plugin-version.entity';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { License } from '../../license/entities/license.entity';
 import { Role } from './role.enum';
@@ -19,6 +20,6 @@ export class User {
   @OneToMany(() => License, (license) => license.user)
   licenses: License[];
 
-  @OneToMany(() => License, (license) => license.user)
-  pluginVersions: License[];
+  @OneToMany(() => PluginVersion, (pluginVersion) => pluginVersion.author)
+  pluginVersions: PluginVersion[];
 }

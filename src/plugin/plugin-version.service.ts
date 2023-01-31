@@ -63,4 +63,8 @@ export class PluginVersionService {
     }
     return await this.pluginVersionRepository.save(pluginVersion);
   }
+
+  async updateHelpFiles(pluginVersion: PluginVersion) {
+    return await this.pluginVersionRepository.save(pluginVersion);
+  }
 }

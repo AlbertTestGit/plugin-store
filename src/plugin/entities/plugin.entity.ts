@@ -1,4 +1,3 @@
-import { License } from 'src/license/entities/license.entity';
 import {
   Column,
   CreateDateColumn,
@@ -6,6 +5,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { PluginVersion } from './plugin-version.entity';
 
 @Entity()
 export class Plugin {
@@ -24,6 +24,6 @@ export class Plugin {
   @Column({ unique: true })
   productKey: string;
 
-  @OneToMany(() => License, (license) => license.user)
-  pluginVersions: License[];
+  @OneToMany(() => PluginVersion, (pluginVersion) => pluginVersion.plugin)
+  pluginVersions: PluginVersion[];
 }

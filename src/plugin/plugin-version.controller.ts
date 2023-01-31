@@ -13,6 +13,7 @@ import {
   ForbiddenException,
   Delete,
   Query,
+  Put,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
@@ -67,12 +68,10 @@ export class PluginVersionController {
         helpFileRu: {
           type: 'string',
           format: 'binary',
-          nullable: true,
         },
         helpFileKz: {
           type: 'string',
           format: 'binary',
-          nullable: false,
         },
       },
     },
@@ -242,5 +241,98 @@ export class PluginVersionController {
       pluginVersion,
       bool,
     );
+  }
+
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        helpFileEn: {
+          type: 'string',
+          format: 'binary',
+        },
+        helpFileRu: {
+          type: 'string',
+          format: 'binary',
+        },
+        helpFileKz: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'helpFileEn', maxCount: 1 },
+        { name: 'helpFileRu', maxCount: 1 },
+        { name: 'helpFileKz', maxCount: 1 },
+      ],
+      { storage: diskStorage({ destination: './upload' }) },
+    ),
+  )
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Put(':id')
+  async update(
+    @Request() req,
+    @Param('id') id: number,
+    @UploadedFiles()
+    files: {
+      helpFileEn?: Express.Multer.File[];
+      helpFileRu?: Express.Multer.File[];
+      helpFileKz?: Express.Multer.File[];
+    },
+  ) {
+    const jwtUser: PayloadDto = req.user;
+
+    const pluginVersion = await this.pluginVersionService.findOneById(id);
+
+    if (!pluginVersion) {
+      if (files.helpFileEn) fs.unlinkSync(files.helpFileEn[0].path);
+      if (files.helpFileRu) fs.unlinkSync(files.helpFileRu[0].path);
+      if (files.helpFileKz) fs.unlinkSync(files.helpFileKz[0].path);
+
+      throw new NotFoundException('plugin version not found');
+    }
+
+    if (jwtUser.sub != pluginVersion.author.id && jwtUser.role != Role.Admin) {
+      if (files.helpFileEn) fs.unlinkSync(files.helpFileEn[0].path);
+      if (files.helpFileRu) fs.unlinkSync(files.helpFileRu[0].path);
+      if (files.helpFileKz) fs.unlinkSync(files.helpFileKz[0].path);
+
+      throw new ForbiddenException();
+    }
+
+    if (!files) {
+      if (files.helpFileEn) fs.unlinkSync(files.helpFileEn[0].path);
+      if (files.helpFileRu) fs.unlinkSync(files.helpFileRu[0].path);
+      if (files.helpFileKz) fs.unlinkSync(files.helpFileKz[0].path);
+
+      throw new BadRequestException('request body must not be empty');
+    }
+
+    if (files.helpFileEn) {
+      if (pluginVersion.helpFileEn) {
+        fs.unlinkSync(`upload/${pluginVersion.helpFileEn}`);
+      }
+      pluginVersion.helpFileEn = files.helpFileEn[0].filename;
+    }
+
+    if (files.helpFileRu) {
+      if (pluginVersion.helpFileRu)
+        fs.unlinkSync(`upload/${pluginVersion.helpFileRu}`);
+      pluginVersion.helpFileRu = files.helpFileRu[0].filename;
+    }
+
+    if (files.helpFileKz) {
+      if (pluginVersion.helpFileKz)
+        fs.unlinkSync(`upload/${pluginVersion.helpFileKz}`);
+      pluginVersion.helpFileKz = files.helpFileKz[0].filename;
+    }
+
+    return await this.pluginVersionService.updateHelpFiles(pluginVersion);
   }
 }

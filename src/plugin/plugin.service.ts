@@ -29,6 +29,9 @@ export class PluginService {
 
   async findOneById(id: number) {
     const plugin = await this.pluginRepository.findOne({
+      relations: {
+        pluginVersions: true,
+      },
       where: {
         id,
       },
