@@ -17,6 +17,7 @@ export class PluginVersionService {
     return await this.pluginVersionRepository.findOne({
       relations: {
         author: true,
+        plugin: true,
       },
       where: { id },
     });
